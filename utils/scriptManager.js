@@ -26,16 +26,47 @@ function modularize(rawContent) {
 }
 
 
+function getFilesInFolder(folderPath) {
+  const filesArray = [];
+  const queue = [folderPath];
+
+  while (queue.length > 0) {
+    const currentPath = queue.shift();
+    const files = fs.readdirSync(currentPath);
+
+    files.forEach(file => {
+      const filePath = path.join(currentPath, file);
+      const stat = fs.statSync(filePath);
+
+      if (stat.isFile()) {
+        filesArray.push(file);
+      } else if (stat.isDirectory()) {
+        queue.push(filePath);
+      }
+    });
+  }
+
+  return filesArray;
+}
+
 function loadScripts(){
-	let content = fs.readFileSync(path.join(scriptFolder + '/toUpper.js'), "utf8");
-	let scriptInfo = getInfo(content);
+  let files = getFilesInFolder(path.join(scriptFolder));
+
+  files.forEach((fileInfo)=> {
+    loadScript(fileInfo);
+  });
+}
+
+function loadScript(name){
+	let content = fs.readFileSync(path.join(scriptFolder +  "/" +  name), "utf8");
+  let scriptInfo = getInfo(content);
 	let moduleContent = modularize(content)
 	scripts[scriptInfo.name] = moduleContent;
-	fs.writeFileSync(path.join(modulesScriptFolder, "/toUpper.js"), moduleContent);
+	fs.writeFileSync(path.join(modulesScriptFolder +  "/" +  name), moduleContent);
 }
 
 function executeScript(scriptName, content) {
-  let state = { text: content };
+  let state = { text: content, error: { message: ""}};
   try {
     const tool = require(`${modulesScriptFolder}/${scriptName}.js`);
     tool.main(state);
