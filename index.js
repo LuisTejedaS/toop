@@ -3,7 +3,7 @@ const ipcMain = electron.ipcMain;
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const path = require('path');
-const { executeScript, loadScripts } = require("./utils/scriptManager.js");
+const { executeScript, loadScripts, getScripts } = require("./utils/scriptManager.js");
 
 let mainWindow;
 
@@ -46,8 +46,14 @@ async function callScript(event, script, content) {
 	return executeScript(script, content);
 }
 
+async function getScriptOptions(event, script, content) {
+	return getScripts(script, content);
+}
+
+
 app.whenReady().then(() => {
   ipcMain.handle('dialog:execScript', callScript)
+  ipcMain.handle('dialog:getScriptOptions', getScriptOptions)
   createWindow()
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

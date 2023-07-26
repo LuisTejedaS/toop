@@ -18,13 +18,13 @@ monaco.languages.register({
 initializeEditor('type whatever you like');
 
 function initializeEditor(fileContent) {
-  monaco.editor.create(document.getElementById("editor"), {
-    model: monaco.editor.createModel(fileContent, LANGUAGE_ID, MONACO_URI),
-    glyphMargin: true,
-    lightbulb: {
-        enabled: true
-    }
-});
+    monaco.editor.create(document.getElementById("editor"), {
+        model: monaco.editor.createModel(fileContent, LANGUAGE_ID, MONACO_URI),
+        glyphMargin: true,
+        lightbulb: {
+            enabled: true
+        }
+    });
 }
 
 function getModel() {
@@ -70,7 +70,7 @@ monaco.languages.registerCompletionItemProvider(LANGUAGE_ID, {
 });
 
 monaco.languages.registerDocumentRangeFormattingEditProvider(LANGUAGE_ID, {
-    provideDocumentRangeFormattingEdits(model, range, options, token){
+    provideDocumentRangeFormattingEdits(model, range, options, token) {
         const document = createDocument(model);
         const edits = jsonService.format(document, m2p.asRange(range), m2p.asFormattingOptions(options));
         return p2m.asTextEdits(edits);
@@ -86,7 +86,7 @@ monaco.languages.registerDocumentSymbolProvider(LANGUAGE_ID, {
 });
 
 monaco.languages.registerHoverProvider(LANGUAGE_ID, {
-    provideHover(model, position, token){
+    provideHover(model, position, token) {
         const document = createDocument(model);
         const jsonDocument = jsonService.parseJSONDocument(document);
         return jsonService.doHover(document, m2p.asPosition(position.lineNumber, position.column), jsonDocument).then((hover) => {
@@ -102,7 +102,7 @@ getModel().onDidChangeContent((event) => {
     validate();
 });
 
-function validate(){
+function validate() {
     const document = createDocument(getModel());
     cleanPendingValidation(document);
     pendingValidationRequests.set(document.uri, setTimeout(() => {
@@ -135,21 +135,44 @@ function cleanDiagnostics() {
     monaco.editor.setModelMarkers(getModel(), 'default', []);
 }
 
-
-async function handleClick(event){
+async function execute(script) {
     let content = getModel().getValue();
-    const script = document.getElementById("script").value;
     const state = await window.electronAPI.execScript(script, content);
-    if(state.error){
+    if (state.error) {
         const diagnosticsArea = document.getElementById("diagnosticsArea");
         diagnosticsArea.value = state.error.message;
     }
     getModel().setValue(state.text);
-  }
-  
+}
+
+
+async function handleClick(event) {
+
+    const script = document.getElementById("script").value;
+    await execute(script);
+}
+
+
 function loadActions() {
     const btn = document.getElementById("btn");
     btn.addEventListener("click", handleClick);
-  }
+    loadScriptsOptions();
+    let select = document.getElementById('scripts');
+    select.addEventListener("change", function () {
+        if (select.value !== "--") {
+            execute(select.value);
+        }
+    });
+}
 
-  
+async function loadScriptsOptions() {
+    const options = await window.electronAPI.getScriptOptions();
+    let select = document.getElementById('scripts');
+    options.forEach((optionScript) => {
+        let opt = document.createElement('option');
+        opt.value = optionScript;
+        opt.innerHTML = optionScript;
+        select.appendChild(opt);
+    });
+}
+
