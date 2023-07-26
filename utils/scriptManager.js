@@ -68,22 +68,23 @@ function loadScript(name) {
 
 function executeScript(scriptName, content) {
   let state = { text: content, error: { message: "" } };
-  // state["postError"] = function (message) {
-  //   state.error = message;
-  // }
+  state["postError"] = function (message) {
+    state.error.message = message;
+  }
 
-try {
-  const tool = require(`${modulesScriptFolder}/${scriptName}.js`);
-  tool.main(state);
-} catch (e) {
-  if (e.code === "MODULE_NOT_FOUND") {
-    state.error = new Error("Script not found " + scriptName);
+  try {
+    const tool = require(`${modulesScriptFolder}/${scriptName}.js`);
+    tool.main(state);
+  } catch (e) {
+    if (e.code === "MODULE_NOT_FOUND") {
+      state.error = new Error("Script not found " + scriptName);
+      return state;
+    }
+    state.error = e;
     return state;
   }
-  state.error = e;
+  state.postError = undefined;
   return state;
-}
-return state;
 }
 
 function getScripts() {
